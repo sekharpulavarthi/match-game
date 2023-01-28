@@ -1,0 +1,9 @@
+.thumbnail-item-container {
+  width: 150px;
+  height: 150px;
+  list-style-type: none;
+}
+
+.thumbnail-item {
+  width: 120px;
+}

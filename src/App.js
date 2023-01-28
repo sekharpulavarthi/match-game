@@ -1,4 +1,7 @@
 import {Component} from 'react'
+import TabItem from './components/TabItem'
+import ThumbnailItem from './components/ThumbnailItem'
+import GameOver from './components/GameOver'
 
 import './App.css'
 
@@ -249,7 +252,26 @@ const imagesList = [
 ]
 
 class App extends Component {
-  state = {score: 0, timer: 60, activeImage: imagesList[0].imageUrl}
+  state = {
+    score: 0,
+    timer: 60,
+    activeImage: imagesList[0].imageUrl,
+    activeTabId: tabsList[0].tabId,
+    gameStatus: false,
+  }
+
+  componentDidMount() {
+    this.timerId = setInterval(this.startTimer, 1000)
+  }
+
+  startTimer = () => {
+    const {timer} = this.state
+    if (timer > 0) {
+      this.setState(prevState => ({timer: prevState.timer - 1}))
+    } else {
+      clearInterval(this.timerId)
+    }
+  }
 
   renderNavbar = () => {
     const {score, timer} = this.state
@@ -264,30 +286,86 @@ class App extends Component {
           />
         </div>
         <div className="score-container">
-          <p>
-            score: <span>{score}</span>
+          <p className="score-text">
+            Score: <span className="timer-value">{score}</span>
           </p>
-          <div>
+          <div className="timer-container">
             <img
               src="https://assets.ccbp.in/frontend/react-js/match-game-timer-img.png"
               className="timer-logo"
               alt="timer"
             />
-            <p>{timer} sec</p>
+            <p className="timer">{timer} sec</p>
           </div>
         </div>
       </div>
     )
   }
 
-  render() {
+  setActiveTabId = tabId => {
+    this.setState({activeTabId: tabId})
+  }
+
+  getFilteredThumbnailItems = () => {
+    const {activeTabId} = this.state
+    return imagesList.filter(imageItem => imageItem.category === activeTabId)
+  }
+
+  onClickThumbnailItem = id => {
     const {activeImage} = this.state
+    const image = imagesList.find(imageItem => imageItem.id === id)
+    const isImageId = activeImage === image.imageUrl
+    const shuffled = Math.floor(Math.random() * imagesList.length)
+
+    const randomImageUrl = imagesList[shuffled].imageUrl
+    const {timer} = this.state
+    if (timer > 0 && isImageId) {
+      this.setState(prevState => ({
+        activeImage: randomImageUrl,
+        score: prevState.score + 1,
+      }))
+    } else {
+      this.setState(prevState => ({gameStatus: !prevState.gameStatus}))
+    }
+  }
+
+  render() {
+    const filteredThumbnailItems = this.getFilteredThumbnailItems()
+    const {activeImage, activeTabId, gameStatus} = this.state
     return (
       <div className="match-game-container">
         {this.renderNavbar()}
-        <div>
-          <img src={activeImage} alt={activeImage} className="image-url" />
-        </div>
+        {gameStatus ? (
+          <div className="match-game-sub-container">
+            <div>
+              <img src={activeImage} alt={activeImage} className="image-url" />
+            </div>
+            <ul className="tab-items-container">
+              {tabsList.map(tabItem => (
+                <TabItem
+                  tabItemDetails={tabItem}
+                  key={tabItem.tabId}
+                  clickTabItem={this.setActiveTabId}
+                  isActive={activeTabId === tabItem.tabId}
+                />
+              ))}
+            </ul>
+            <ul className="thumbnail-items-container">
+              {filteredThumbnailItems.map(thumbnailItem => (
+                <ThumbnailItem
+                  thumbnailItemDetails={thumbnailItem}
+                  key={thumbnailItem.id}
+                  onClickThumbnailItem={this.onClickThumbnailItem}
+                  activeTabId={activeTabId}
+                />
+              ))}
+            </ul>
+          </div>
+        ) : (
+          <div className="score-card-container">
+            <GameOver />
+          </div>
+        )}
       </div>
     )
   }
